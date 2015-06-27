@@ -230,6 +230,48 @@ class JbuilderTemplateTest < ActionView::TestCase
     assert_equal %w[a b c], parsed
   end
 
+  test "chunked-fragment caching of an array merges the results when caching is on" do
+    render_jbuilder <<-JBUILDER
+      (1..10).each_slice(5) do |num_slice|
+        json.cache! num_slice.join(':') do
+          json.array! num_slice
+        end
+      end
+    JBUILDER
+
+    result = render_jbuilder(<<-JBUILDER)
+      (1..10).each_slice(5) do |num_slice|
+        json.cache! num_slice.join(':') do
+          json.array! num_slice
+        end
+      end
+    JBUILDER
+
+    assert_equal "[1,2,3,4,5,6,7,8,9,10]", result
+  end
+
+  test "chunked-fragment caching of an array merges the results when caching is off" do
+    controller.perform_caching = false
+
+    render_jbuilder <<-JBUILDER
+      (1..10).each_slice(5) do |num_slice|
+        json.cache! num_slice.join(':') do
+          json.array! num_slice
+        end
+      end
+    JBUILDER
+
+    result = render_jbuilder(<<-JBUILDER)
+      (1..10).each_slice(5) do |num_slice|
+        json.cache! num_slice.join(':') do
+          json.array! num_slice
+        end
+      end
+    JBUILDER
+
+    assert_equal "[1,2,3,4,5,6,7,8,9,10]", result
+  end
+
   test 'fragment caching works with previous version of cache digests' do
     undef_context_methods :cache_fragment_name
 
